@@ -1,0 +1,1987 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Experiencia 3D Interactiva - Chagrasué Hidromiel</title>
+  <style>
+    :root {
+      --oro-miel: #f5a800;
+      --terracota: #d84a1b;
+      --verde-selva: #008f5a;
+      --cacao-oscuro: #3d1c06;
+      --crema-calido: #fff8e7;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
+      touch-action: none;
+      background-color: #160a03;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+    canvas { display: block; touch-action: none; }
+
+    /* AVISO RECORDATORIO CENTRAL PERIÓDICO (CADA 1 MINUTO) */
+    #aviso-interaccion {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.95);
+      background: rgba(61, 28, 6, 0.86);
+      color: var(--crema-calido);
+      padding: 18px 32px;
+      border-radius: 16px;
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      text-align: center;
+      backdrop-filter: blur(10px);
+      border: 1.5px solid rgba(245, 168, 0, 0.65);
+      box-shadow: 0 14px 40px rgba(0, 0, 0, 0.75), 0 0 24px rgba(245, 168, 0, 0.25);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.9s ease, transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+      z-index: 17;
+      max-width: 86vw;
+    }
+    #aviso-interaccion.visible {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+    #aviso-interaccion span {
+      color: var(--oro-miel);
+      font-weight: 700;
+    }
+
+    /* PANEL DE INSTRUCCIONES SUPERIOR IZQUIERDO */
+    #contenedor-guia {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    #btnToggleGuia {
+      display: none;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: rgba(61, 28, 6, 0.9);
+      color: var(--oro-miel);
+      border: 1.5px solid var(--oro-miel);
+      font-weight: 800;
+      font-size: 16px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+      align-items: center;
+      justify-content: center;
+    }
+    #guia {
+      background: rgba(61, 28, 6, 0.88);
+      color: var(--crema-calido);
+      padding: 13px 18px;
+      border-radius: 10px;
+      font-size: 13px;
+      line-height: 1.55;
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(245, 168, 0, 0.45);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+      pointer-events: none;
+      max-width: 340px;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+    #guia .titulo-guia {
+      display: inline-block;
+      color: var(--oro-miel);
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      margin-bottom: 3px;
+      border-bottom: 1px solid rgba(216, 74, 27, 0.55);
+      padding-bottom: 2px;
+    }
+    #guia strong { color: var(--oro-miel); }
+    #guia .vineta { color: var(--terracota); font-weight: bold; }
+    .texto-movil { display: none; }
+
+    /* BOTÓN DE CONTROL DE SONIDO DE ENTORNO (SUPERIOR DERECHA) */
+    #btnAudio {
+      position: fixed;
+      top: 16px;
+      right: 18px;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: rgba(61, 28, 6, 0.88);
+      color: var(--oro-miel);
+      border: 1.5px solid rgba(245, 168, 0, 0.55);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(6px);
+      transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+      z-index: 25;
+    }
+    #btnAudio:hover {
+      transform: scale(1.08);
+      border-color: var(--oro-miel);
+      background: var(--cacao-oscuro);
+    }
+
+    /* BARRA DE BOTONES DE ETIQUETAS */
+    #menu-botellas {
+      position: fixed;
+      left: 22px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      z-index: 16;
+    }
+    .btn-etiqueta {
+      background: transparent;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      width: 64px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform: scale(1);
+      transform-origin: left center;
+      transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), filter 0.25s ease;
+      filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.75)) brightness(0.88);
+    }
+    .btn-etiqueta:hover {
+      transform: scale(1.08);
+      filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.85)) brightness(1);
+    }
+    .btn-etiqueta.activo {
+      transform: scale(1.26);
+      filter: drop-shadow(0 0 14px rgba(245, 168, 0, 0.75)) brightness(1.05);
+    }
+    .btn-etiqueta img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    /* BOTÓN CENTRAL DE RESETEO AMPLIADO (195px) */
+    @keyframes latidoSuave {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.06); }
+    }
+    @keyframes giroReset {
+      0% { transform: scale(1.12) rotate(0deg); }
+      100% { transform: scale(1.12) rotate(-360deg); }
+    }
+
+    #contenedor-reset {
+      position: fixed;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 16;
+    }
+    #btnReset {
+      background: transparent;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      width: 195px;
+      height: 195px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: latidoSuave 3.2s ease-in-out infinite;
+      transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), filter 0.25s ease;
+      filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.82));
+    }
+    #btnReset:hover {
+      animation: none;
+      transform: scale(1.12);
+      filter: drop-shadow(0 0 22px rgba(245, 168, 0, 0.85));
+    }
+    #btnReset.girando {
+      animation: giroReset 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    #btnReset img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    /* BOTÓN DISCRETO DE COLISIONES EN ESQUINA INFERIOR IZQUIERDA */
+    #btnDebug {
+      position: fixed;
+      bottom: 14px;
+      left: 14px;
+      padding: 5px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 6px;
+      background: rgba(61, 28, 6, 0.65);
+      color: var(--crema-calido);
+      border: 1px solid rgba(245, 168, 0, 0.3);
+      opacity: 0.35;
+      transition: opacity 0.25s ease, background 0.2s ease, transform 0.2s ease;
+      z-index: 16;
+    }
+    #btnDebug:hover, #btnDebug.activo {
+      opacity: 1;
+      background: var(--cacao-oscuro);
+      border-color: var(--verde-selva);
+      color: var(--oro-miel);
+    }
+
+    /* QR INTERACTIVO EN ESQUINA INFERIOR DERECHA */
+    #contenedor-qr {
+      position: fixed;
+      bottom: 18px;
+      right: 18px;
+      z-index: 22;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+    #btnQr {
+      background: rgba(255, 248, 231, 0.95);
+      border: 2px solid var(--oro-miel);
+      border-radius: 10px;
+      padding: 4px;
+      width: 54px;
+      height: 54px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform-origin: bottom right;
+      transform: scale(1);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.65);
+      transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease, border-color 0.25s ease;
+    }
+    #btnQr:hover {
+      transform: scale(1.12);
+      border-color: var(--terracota);
+      box-shadow: 0 0 16px rgba(245, 168, 0, 0.65);
+    }
+    #btnQr.ampliado {
+      transform: scale(3.1);
+      border-color: var(--oro-miel);
+      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.85), 0 0 24px rgba(245, 168, 0, 0.5);
+    }
+    #btnQr img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      border-radius: 6px;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    /* PANEL LATERAL DERECHO PARA LA FICHA PNG DEL DIOS / HIDROMIEL */
+    #ficha-dios {
+      position: fixed;
+      top: 66px;
+      right: 20px;
+      bottom: 84px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateX(35px);
+      transition: opacity 0.28s ease, transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+      z-index: 19;
+    }
+    #ficha-dios.visible {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    #ficha-dios img {
+      max-height: 100%;
+      max-width: 44vw;
+      width: auto;
+      height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 12px 32px rgba(0, 0, 0, 0.85));
+      user-select: none;
+    }
+    #btnCerrarFichaMovil {
+      display: none;
+    }
+
+    /* PANTALLA DE CARGA */
+    #loading {
+      position: fixed; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 14px; padding: 20px; text-align: center;
+      color: var(--crema-calido); font-size: 16px; background: #160a03; z-index: 30;
+    }
+    .barra-contenedor {
+      width: min(280px, 80vw); height: 8px; background: rgba(255, 248, 231, 0.14);
+      border-radius: 99px; overflow: hidden;
+    }
+    #barra-progreso {
+      width: 0%; height: 100%;
+      background: linear-gradient(90deg, var(--terracota), var(--oro-miel), var(--verde-selva));
+      transition: width 0.15s ease-out;
+    }
+    #loading-detalle { font-size: 13px; color: rgba(255, 248, 231, 0.72); }
+
+    /* =========================================================
+       DISEÑO RESPONSIVE PARA TABLETS Y CELULARES (<= 768px)
+       ========================================================= */
+    @media (max-width: 768px) {
+      .texto-desktop { display: none; }
+      .texto-movil { display: inline; }
+
+      #aviso-interaccion {
+        font-size: 15px;
+        padding: 14px 22px;
+      }
+
+      #btnToggleGuia {
+        display: flex;
+      }
+      #guia {
+        font-size: 12px;
+        padding: 10px 14px;
+        max-width: calc(100vw - 32px);
+        opacity: 0;
+        transform: translateY(-8px);
+        pointer-events: none;
+      }
+      #guia.abierta {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+      }
+
+      #btnAudio {
+        top: 16px;
+        right: 16px;
+        width: 38px;
+        height: 38px;
+        font-size: 16px;
+      }
+
+      #menu-botellas {
+        left: 50%;
+        top: auto;
+        bottom: 128px;
+        transform: translateX(-50%);
+        flex-direction: row;
+        gap: 10px;
+        background: rgba(61, 28, 6, 0.55);
+        padding: 6px 12px;
+        border-radius: 99px;
+        backdrop-filter: blur(6px);
+        border: 1px solid rgba(245, 168, 0, 0.25);
+      }
+      .btn-etiqueta {
+        width: 46px;
+        height: 46px;
+        transform-origin: center bottom;
+      }
+      .btn-etiqueta.activo {
+        transform: scale(1.24) translateY(-4px);
+      }
+
+      #contenedor-reset {
+        bottom: 10px;
+      }
+      #btnReset {
+        width: 114px;
+        height: 114px;
+      }
+
+      #btnDebug {
+        bottom: 12px;
+        left: 10px;
+        padding: 4px 8px;
+        font-size: 10px;
+      }
+
+      #contenedor-qr {
+        bottom: 12px;
+        right: 12px;
+      }
+      #btnQr {
+        width: 46px;
+        height: 46px;
+      }
+      #btnQr.ampliado {
+        position: fixed;
+        bottom: auto;
+        right: auto;
+        top: 50%;
+        left: 50%;
+        transform-origin: center center;
+        transform: translate(-50%, -50%) scale(3.4);
+      }
+
+      #ficha-dios {
+        top: 62px;
+        left: 12px;
+        right: 12px;
+        bottom: 192px;
+        justify-content: center;
+        transform: translateY(20px);
+      }
+      #ficha-dios.visible {
+        transform: translateY(0);
+        pointer-events: auto;
+      }
+      #ficha-dios img {
+        max-width: 88vw;
+        max-height: 100%;
+        width: auto;
+        height: 100%;
+      }
+      #btnCerrarFichaMovil {
+        display: flex;
+        position: absolute;
+        top: -10px;
+        right: 8%;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: var(--terracota);
+        color: var(--crema-calido);
+        border: 1.5px solid var(--oro-miel);
+        font-weight: 700;
+        font-size: 14px;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
+      }
+    }
+
+    @media (max-height: 480px) {
+      #menu-botellas {
+        left: 14px;
+        top: 50%;
+        bottom: auto;
+        transform: translateY(-50%);
+        flex-direction: column;
+        gap: 6px;
+        padding: 6px;
+      }
+      .btn-etiqueta { width: 38px; height: 38px; }
+      #btnReset { width: 88px; height: 88px; }
+      #ficha-dios { top: 12px; bottom: 12px; right: 72px; left: auto; }
+      #ficha-dios img { max-width: 42vw; }
+    }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.169.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.169.0/examples/jsm/",
+        "cannon-es": "https://unpkg.com/cannon-es@0.20.0/dist/cannon-es.js"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="loading">
+    <div id="loading-titulo">Cargando escena 3D... 0%</div>
+    <div class="barra-contenedor"><div id="barra-progreso"></div></div>
+    <div id="loading-detalle">Iniciando motor... (0.0s)</div>
+  </div>
+
+  <!-- Aviso recordatorio central periódico -->
+  <div id="aviso-interaccion">
+    <span>Interactúa</span> con las botellas y explora la <span>cámara 360°</span>
+  </div>
+
+  <!-- Guía de interacción adaptativa -->
+  <div id="contenedor-guia">
+    <button id="btnToggleGuia" aria-label="Ayuda">?</button>
+    <div id="guia">
+      <span class="titulo-guia">GUÍA DE INTERACCIÓN</span><br>
+      <span class="texto-desktop">
+        <span class="vineta">•</span> <strong>Botones izq. (1-5):</strong> Fijar o cerrar historia del Dios<br>
+        <span class="vineta">•</span> <strong>Arrastrar botella:</strong> Burbujas de hidromiel + ver ficha<br>
+        <span class="vineta">•</span> <strong>Clic izq. en el fondo:</strong> Girar vista 360° en tu punto<br>
+        <span class="vineta">•</span> <strong>Clic der. (o rueda clic):</strong> Moverse en contorno + altura<br>
+        <span class="vineta">•</span> <strong>Rueda del ratón:</strong> Acercar / alejar dentro del domo
+      </span>
+      <span class="texto-movil">
+        <span class="vineta">•</span> <strong>Iconos inferiores (1-5):</strong> Fijar o cerrar historia del Dios<br>
+        <span class="vineta">•</span> <strong>1 dedo en botella:</strong> Mover con burbujas + ver ficha<br>
+        <span class="vineta">•</span> <strong>1 dedo en el fondo:</strong> Girar vista 360°<br>
+        <span class="vineta">•</span> <strong>2 dedos:</strong> Pellizcar para acercar / mover contorno y altura
+      </span>
+    </div>
+  </div>
+
+  <!-- Botón discreto para activar / silenciar música de entorno -->
+  <button id="btnAudio" title="Activar o silenciar sonido de entorno">🔊</button>
+
+  <!-- Barra de los 5 botones -->
+  <div id="menu-botellas">
+    <button class="btn-etiqueta" data-botella="1" title="Botella 1 - Sua Chie">
+      <img src="./imgbotonbotella/etiquetas-12.png" alt="Botella 1" />
+    </button>
+    <button class="btn-etiqueta" data-botella="2" title="Botella 2 - Tláloc">
+      <img src="./imgbotonbotella/etiquetas-13.png" alt="Botella 2" />
+    </button>
+    <button class="btn-etiqueta" data-botella="3" title="Botella 3 - Pachamama">
+      <img src="./imgbotonbotella/etiquetas-14.png" alt="Botella 3" />
+    </button>
+    <button class="btn-etiqueta" data-botella="4" title="Botella 4 - Viracocha">
+      <img src="./imgbotonbotella/etiquetas-15.png" alt="Botella 4" />
+    </button>
+    <button class="btn-etiqueta" data-botella="5" title="Botella 5 - Guardianes de la Chagra">
+      <img src="./imgbotonbotella/etiquetas-16.png" alt="Botella 5" />
+    </button>
+  </div>
+
+  <!-- Contenedor de la ficha PNG vertical -->
+  <div id="ficha-dios">
+    <button id="btnCerrarFichaMovil" aria-label="Cerrar ficha">✕</button>
+    <img id="ficha-dios-img" src="" alt="Historia del Dios e Hidromiel" />
+  </div>
+
+  <!-- Botón central inferior de reseteo -->
+  <div id="contenedor-reset">
+    <button id="btnReset" title="Resetear posición de las botellas">
+      <img src="./botones/botonreseteo.png" alt="Resetear Botellas" />
+    </button>
+  </div>
+
+  <!-- Botón discreto de diagnóstico de colisiones -->
+  <button id="btnDebug" title="Mostrar u ocultar mallas de colisión">Colisiones</button>
+
+  <!-- QR interactivo abajo a la derecha -->
+  <div id="contenedor-qr">
+    <button id="btnQr" title="1 clic para ampliar QR | Doble clic para abrir Chagrasué">
+      <img src="./botones/qrpagina.png" alt="Código QR Página Web" />
+    </button>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+    import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+    import * as CANNON from 'cannon-es';
+
+    // URL oficial del proyecto Chagrasué
+    const URL_PAGINA_WEB = 'https://stivencalderon2030.github.io/Chagrasue.github.io/';
+
+    // =========================================================
+    // AVISO RECORDATORIO CENTRAL PERIÓDICO (APARECE 6s, ESPERA 60s)
+    // =========================================================
+    const avisoEl = document.getElementById('aviso-interaccion');
+
+    function activarCicloAvisoInteraccion() {
+      function mostrarAvisoTemporal() {
+        avisoEl.classList.add('visible');
+        setTimeout(() => {
+          avisoEl.classList.remove('visible');
+          setTimeout(mostrarAvisoTemporal, 60000);
+        }, 6000);
+      }
+      setTimeout(mostrarAvisoTemporal, 2000);
+    }
+
+    // =========================================================
+    // MÚSICA DE ENTORNO EN LOOP (./sonido/sonidoentorno.mp3)
+    // =========================================================
+    const audioEntorno = new Audio('./sonido/sonidoentorno.mp3');
+    audioEntorno.loop = true;
+    audioEntorno.volume = 0.45;
+
+    let audioSilenciado = false;
+    let entornoIniciado = false;
+
+    const btnAudio = document.getElementById('btnAudio');
+    btnAudio.addEventListener('click', (e) => {
+      e.stopPropagation();
+      inicializarAudio();
+      audioSilenciado = !audioSilenciado;
+      audioEntorno.muted = audioSilenciado;
+      btnAudio.textContent = audioSilenciado ? '🔇' : '🔊';
+    });
+
+    function iniciarMusicaEntorno() {
+      if (entornoIniciado) return;
+      entornoIniciado = true;
+      audioEntorno.play().catch(() => {
+        entornoIniciado = false;
+      });
+    }
+
+    let audioCtx = null;
+    let oscCamaraPrincipal = null;
+    let filtroCamara = null;
+    let gananciaCamara = null;
+    let energiaMovimientoCamara = 0;
+
+    function inicializarAudio() {
+      iniciarMusicaEntorno();
+
+      if (audioCtx) {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        return;
+      }
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return;
+
+      audioCtx = new AudioContextClass();
+
+      oscCamaraPrincipal = audioCtx.createOscillator();
+      oscCamaraPrincipal.type = 'sine';
+      oscCamaraPrincipal.frequency.value = 110.0;
+
+      filtroCamara = audioCtx.createBiquadFilter();
+      filtroCamara.type = 'lowpass';
+      filtroCamara.frequency.value = 180;
+
+      gananciaCamara = audioCtx.createGain();
+      gananciaCamara.gain.value = 0.0;
+
+      oscCamaraPrincipal.connect(filtroCamara);
+      filtroCamara.connect(gananciaCamara);
+      gananciaCamara.connect(audioCtx.destination);
+
+      oscCamaraPrincipal.start();
+    }
+
+    function estimularSonidoCamara(intensidad, alturaNormalizada = 0.5) {
+      if (audioSilenciado || !audioCtx || !gananciaCamara || !oscCamaraPrincipal) return;
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+
+      energiaMovimientoCamara = Math.min(1.0, energiaMovimientoCamara + intensidad);
+      const freqBase = 98 + alturaNormalizada * 34;
+      oscCamaraPrincipal.frequency.setTargetAtTime(freqBase, audioCtx.currentTime, 0.08);
+    }
+
+    function actualizarSonidoCamara(delta) {
+      if (!audioCtx || !gananciaCamara) return;
+
+      energiaMovimientoCamara = Math.max(0, energiaMovimientoCamara - delta * 4.5);
+      const volumenObjetivo = audioSilenciado ? 0 : energiaMovimientoCamara * 0.012;
+      gananciaCamara.gain.setTargetAtTime(volumenObjetivo, audioCtx.currentTime, 0.05);
+    }
+
+    function reproducirSonidoCristal(intensidadImpacto = 0.5) {
+      if (audioSilenciado || !audioCtx) return;
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+
+      const ahora = audioCtx.currentTime;
+      const vol = Math.min(0.22, Math.max(0.025, intensidadImpacto * 0.13));
+
+      const variacion = 0.95 + Math.random() * 0.1;
+      const frecuencias = [780 * variacion, 1190 * variacion];
+
+      frecuencias.forEach((freq, idx) => {
+        const osc = audioCtx.createOscillator();
+        const filter = audioCtx.createBiquadFilter();
+        const gain = audioCtx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, ahora);
+        osc.frequency.exponentialRampToValueAtTime(freq * 0.97, ahora + 0.28);
+
+        filter.type = 'lowpass';
+        filter.frequency.value = 1600;
+
+        const amplitud = idx === 0 ? vol : vol * 0.42;
+        gain.gain.setValueAtTime(0.0001, ahora);
+        gain.gain.linearRampToValueAtTime(amplitud, ahora + 0.005);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ahora + (idx === 0 ? 0.30 : 0.18));
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start(ahora);
+        osc.stop(ahora + 0.32);
+      });
+    }
+
+    window.addEventListener('pointerdown', inicializarAudio, { once: true });
+    window.addEventListener('wheel', inicializarAudio, { once: true, capture: true });
+
+    // =========================================================
+    // BARRA DE PROGRESO Y CONTROLES UI
+    // =========================================================
+    const loadingEl = document.getElementById('loading');
+    const tituloEl = document.getElementById('loading-titulo');
+    const barraEl = document.getElementById('barra-progreso');
+    const detalleEl = document.getElementById('loading-detalle');
+    const inicioCarga = performance.now();
+    let estadoTexto = 'Conectando con escena.glb...';
+
+    const timerCarga = setInterval(() => {
+      const segs = ((performance.now() - inicioCarga) / 1000).toFixed(1);
+      detalleEl.textContent = `${estadoTexto} (${segs}s)`;
+    }, 100);
+
+    function actualizarProgreso(porcentaje, titulo, detalle) {
+      barraEl.style.width = `${porcentaje}%`;
+      if (titulo) tituloEl.textContent = titulo;
+      if (detalle) estadoTexto = detalle;
+    }
+
+    const btnToggleGuia = document.getElementById('btnToggleGuia');
+    const guiaPanel = document.getElementById('guia');
+    btnToggleGuia.addEventListener('click', (e) => {
+      e.stopPropagation();
+      guiaPanel.classList.toggle('abierta');
+    });
+
+    const btnQr = document.getElementById('btnQr');
+    let ultimoToqueQr = 0;
+
+    btnQr.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const ahora = performance.now();
+      if (ahora - ultimoToqueQr < 340) {
+        window.open(URL_PAGINA_WEB, '_blank', 'noopener,noreferrer');
+        btnQr.classList.remove('ampliado');
+      } else {
+        btnQr.classList.toggle('ampliado');
+      }
+      ultimoToqueQr = ahora;
+    });
+
+    window.addEventListener('pointerdown', (e) => {
+      if (!e.target.closest('#contenedor-qr') && btnQr.classList.contains('ampliado')) {
+        btnQr.classList.remove('ampliado');
+      }
+      if (!e.target.closest('#contenedor-guia') && guiaPanel.classList.contains('abierta')) {
+        guiaPanel.classList.remove('abierta');
+      }
+    });
+
+    const fichaPanel = document.getElementById('ficha-dios');
+    const fichaImg = document.getElementById('ficha-dios-img');
+    const btnCerrarFichaMovil = document.getElementById('btnCerrarFichaMovil');
+    const botonesEtiquetasEls = document.querySelectorAll('.btn-etiqueta');
+
+    const imagenesBotellas = {
+      1: './imgsegunbotella/botella1.png',
+      2: './imgsegunbotella/botella2.png',
+      3: './imgsegunbotella/botella3.png',
+      4: './imgsegunbotella/botella4.png',
+      5: './imgsegunbotella/botella5.png'
+    };
+
+    let botellaFijadaPorBoton = null;
+
+    function mostrarFichaBotella(numeroBotella) {
+      const ruta = imagenesBotellas[numeroBotella] || imagenesBotellas[1];
+      fichaImg.onerror = () => {
+        fichaPanel.classList.remove('visible');
+      };
+      fichaImg.src = ruta;
+      fichaPanel.classList.add('visible');
+    }
+
+    function ocultarFichaBotella() {
+      if (botellaFijadaPorBoton !== null) {
+        mostrarFichaBotella(botellaFijadaPorBoton);
+      } else {
+        fichaPanel.classList.remove('visible');
+      }
+    }
+
+    function actualizarEstadoBotones() {
+      botonesEtiquetasEls.forEach((btn) => {
+        const num = parseInt(btn.dataset.botella, 10);
+        btn.classList.toggle('activo', num === botellaFijadaPorBoton);
+      });
+    }
+
+    btnCerrarFichaMovil.addEventListener('click', (e) => {
+      e.stopPropagation();
+      botellaFijadaPorBoton = null;
+      actualizarEstadoBotones();
+      fichaPanel.classList.remove('visible');
+    });
+
+    botonesEtiquetasEls.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const num = parseInt(btn.dataset.botella, 10);
+        if (botellaFijadaPorBoton === num) {
+          botellaFijadaPorBoton = null;
+          actualizarEstadoBotones();
+          fichaPanel.classList.remove('visible');
+        } else {
+          botellaFijadaPorBoton = num;
+          actualizarEstadoBotones();
+          mostrarFichaBotella(num);
+        }
+      });
+    });
+
+    // 1. Escena, Cámara y Renderizador
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x0c0907, 0.016);
+
+    const camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.08, 1000);
+    camera.position.set(0, 1.55, 2.8);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 0.82;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    document.body.appendChild(renderer.domElement);
+
+    const pmremGenerator = new THREE.PMREMGenerator(renderer);
+    scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+    scene.environmentIntensity = 0.22;
+
+    // 2. SISTEMA DE CÁMARA 360°
+    const limitesCamara = {
+      centro: new THREE.Vector3(0, 1.2, 0),
+      radioMax: 3.4,
+      minY: 0.45,
+      maxY: 3.2
+    };
+
+    const orbit = new OrbitControls(camera, renderer.domElement);
+    orbit.enableDamping = true;
+    orbit.dampingFactor = 0.06;
+    orbit.target.set(0, 1.55, 2.79);
+    orbit.minDistance = 0.01;
+    orbit.maxDistance = 0.01;
+    orbit.rotateSpeed = -0.55;
+    orbit.enablePan = false;
+    orbit.enableZoom = false;
+    orbit.touches = {
+      ONE: THREE.TOUCH.ROTATE,
+      TWO: THREE.TOUCH.NONE
+    };
+
+    let autoRotarEnContorno = true;
+    let timeoutAutoRotate;
+    function pausarAutoRotate() {
+      autoRotarEnContorno = false;
+      clearTimeout(timeoutAutoRotate);
+    }
+    function reanudarAutoRotate() {
+      clearTimeout(timeoutAutoRotate);
+      timeoutAutoRotate = setTimeout(() => {
+        autoRotarEnContorno = true;
+      }, 3000);
+    }
+    orbit.addEventListener('start', pausarAutoRotate);
+    orbit.addEventListener('end', reanudarAutoRotate);
+
+    function obtenerAlturaNormalizada() {
+      const rango = Math.max(0.1, limitesCamara.maxY - limitesCamara.minY);
+      return THREE.MathUtils.clamp((camera.position.y - limitesCamara.minY) / rango, 0, 1);
+    }
+
+    function rotarCamaraEnContorno(anguloRadianes) {
+      const cosA = Math.cos(anguloRadianes);
+      const sinA = Math.sin(anguloRadianes);
+
+      const relCamX = camera.position.x - limitesCamara.centro.x;
+      const relCamZ = camera.position.z - limitesCamara.centro.z;
+      camera.position.x = limitesCamara.centro.x + (relCamX * cosA - relCamZ * sinA);
+      camera.position.z = limitesCamara.centro.z + (relCamX * sinA + relCamZ * cosA);
+
+      const relTarX = orbit.target.x - limitesCamara.centro.x;
+      const relTarZ = orbit.target.z - limitesCamara.centro.z;
+      orbit.target.x = limitesCamara.centro.x + (relTarX * cosA - relTarZ * sinA);
+      orbit.target.z = limitesCamara.centro.z + (relTarX * sinA + relTarZ * cosA);
+    }
+
+    function avanzarRetrocederCamara(paso) {
+      const direccionVista = new THREE.Vector3();
+      camera.getWorldDirection(direccionVista);
+      direccionVista.y = 0;
+      if (direccionVista.lengthSq() > 0.0001) {
+        direccionVista.normalize();
+        const desplazamiento = direccionVista.multiplyScalar(paso);
+        camera.position.add(desplazamiento);
+        orbit.target.add(desplazamiento);
+        aplicarLimitesCamara();
+        estimularSonidoCamara(Math.min(0.5, Math.abs(paso) * 1.2), obtenerAlturaNormalizada());
+      }
+    }
+
+    let arrastrandoContornoYAltura = false;
+    let ultimoXMouse = 0;
+    let ultimoYMouse = 0;
+
+    renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
+
+    renderer.domElement.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse' && (e.button === 2 || e.button === 1)) {
+        e.preventDefault();
+        inicializarAudio();
+        arrastrandoContornoYAltura = true;
+        ultimoXMouse = e.clientX;
+        ultimoYMouse = e.clientY;
+        pausarAutoRotate();
+        document.body.style.cursor = 'move';
+      }
+    });
+
+    window.addEventListener('pointermove', (e) => {
+      if (!arrastrandoContornoYAltura) return;
+      const deltaX = e.clientX - ultimoXMouse;
+      const deltaY = e.clientY - ultimoYMouse;
+      ultimoXMouse = e.clientX;
+      ultimoYMouse = e.clientY;
+
+      if (deltaX !== 0) rotarCamaraEnContorno(-deltaX * 0.0045);
+      if (deltaY !== 0) {
+        const desplazamientoY = deltaY * 0.0045;
+        camera.position.y += desplazamientoY;
+        orbit.target.y += desplazamientoY;
+      }
+
+      const magnitud = Math.hypot(deltaX, deltaY);
+      if (magnitud > 0) {
+        estimularSonidoCamara(Math.min(0.45, magnitud * 0.018), obtenerAlturaNormalizada());
+      }
+
+      aplicarLimitesCamara();
+    });
+
+    window.addEventListener('pointerup', (e) => {
+      if (e.pointerType === 'mouse' && (e.button === 2 || e.button === 1) && arrastrandoContornoYAltura) {
+        arrastrandoContornoYAltura = false;
+        document.body.style.cursor = 'default';
+        reanudarAutoRotate();
+      }
+    });
+
+    renderer.domElement.addEventListener('wheel', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      inicializarAudio();
+      pausarAutoRotate();
+      avanzarRetrocederCamara(-Math.sign(event.deltaY) * 0.25);
+      reanudarAutoRotate();
+    }, { passive: false, capture: true });
+
+    let gestoDosDedosActivo = false;
+    let distDosDedosAnterior = 0;
+    let centroDosDedosAnterior = { x: 0, y: 0 };
+
+    renderer.domElement.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 2) {
+        inicializarAudio();
+        gestoDosDedosActivo = true;
+        orbit.enabled = false;
+        pausarAutoRotate();
+
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        distDosDedosAnterior = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+        centroDosDedosAnterior = {
+          x: (t1.clientX + t2.clientX) * 0.5,
+          y: (t1.clientY + t2.clientY) * 0.5
+        };
+      }
+    }, { passive: false });
+
+    renderer.domElement.addEventListener('touchmove', (e) => {
+      if (gestoDosDedosActivo && e.touches.length === 2) {
+        e.preventDefault();
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+
+        const nuevaDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+        const nuevoCentro = {
+          x: (t1.clientX + t2.clientX) * 0.5,
+          y: (t1.clientY + t2.clientY) * 0.5
+        };
+
+        const deltaPinch = nuevaDist - distDosDedosAnterior;
+        if (Math.abs(deltaPinch) > 0.5) {
+          avanzarRetrocederCamara(deltaPinch * 0.008);
+        }
+
+        const deltaX = nuevoCentro.x - centroDosDedosAnterior.x;
+        if (deltaX !== 0) {
+          rotarCamaraEnContorno(-deltaX * 0.0055);
+        }
+
+        const deltaY = nuevoCentro.y - centroDosDedosAnterior.y;
+        if (deltaY !== 0) {
+          const despY = deltaY * 0.0055;
+          camera.position.y += despY;
+          orbit.target.y += despY;
+        }
+
+        const magTactil = Math.hypot(deltaX, deltaY) + Math.abs(deltaPinch);
+        if (magTactil > 0) {
+          estimularSonidoCamara(Math.min(0.45, magTactil * 0.015), obtenerAlturaNormalizada());
+        }
+
+        aplicarLimitesCamara();
+        distDosDedosAnterior = nuevaDist;
+        centroDosDedosAnterior = nuevoCentro;
+      }
+    }, { passive: false });
+
+    renderer.domElement.addEventListener('touchend', (e) => {
+      if (gestoDosDedosActivo && e.touches.length < 2) {
+        gestoDosDedosActivo = false;
+        if (!registroActivo) orbit.enabled = true;
+        reanudarAutoRotate();
+      }
+    });
+
+    function aplicarLimitesCamara() {
+      if (camera.position.y < limitesCamara.minY) {
+        const diffY = limitesCamara.minY - camera.position.y;
+        camera.position.y += diffY;
+        orbit.target.y += diffY;
+      } else if (camera.position.y > limitesCamara.maxY) {
+        const diffY = limitesCamara.maxY - camera.position.y;
+        camera.position.y += diffY;
+        orbit.target.y += diffY;
+      }
+
+      const dx = camera.position.x - limitesCamara.centro.x;
+      const dz = camera.position.z - limitesCamara.centro.z;
+      const distHorizontal = Math.sqrt(dx * dx + dz * dz);
+
+      if (distHorizontal > limitesCamara.radioMax) {
+        const factor = limitesCamara.radioMax / distHorizontal;
+        const nuevoX = limitesCamara.centro.x + dx * factor;
+        const nuevoZ = limitesCamara.centro.z + dz * factor;
+
+        const corrX = nuevoX - camera.position.x;
+        const corrZ = nuevoZ - camera.position.z;
+
+        camera.position.x = nuevoX;
+        camera.position.z = nuevoZ;
+        orbit.target.x += corrX;
+        orbit.target.z += corrZ;
+      }
+    }
+
+    // 3. SISTEMA DE BURBUJAS DORADAS DE HIDROMIEL
+    const burbujasActivas = [];
+    const geoBurbuja = new THREE.SphereGeometry(1, 12, 12);
+    const matBurbuja = new THREE.MeshPhysicalMaterial({
+      color: 0xffd56b,
+      emissive: 0xf5a800,
+      emissiveIntensity: 0.45,
+      roughness: 0.05,
+      metalness: 0.0,
+      transmission: 0.85,
+      ior: 1.35,
+      transparent: true,
+      opacity: 0.85
+    });
+
+    function emitirBurbujasEnBotella(registroBotella, cantidad = 4) {
+      if (!registroBotella) return;
+      const posBase = registroBotella.mesh.position;
+      const alturaBotella = registroBotella.alturaVisual || 0.35;
+
+      for (let i = 0; i < cantidad; i++) {
+        const meshBurbuja = new THREE.Mesh(geoBurbuja, matBurbuja.clone());
+        const radio = 0.007 + Math.random() * 0.013;
+        meshBurbuja.scale.setScalar(radio);
+
+        const angulo = Math.random() * Math.PI * 2;
+        const distRadio = Math.random() * 0.065;
+        meshBurbuja.position.set(
+          posBase.x + Math.cos(angulo) * distRadio,
+          posBase.y + alturaBotella * (0.25 + Math.random() * 0.75),
+          posBase.z + Math.sin(angulo) * distRadio
+        );
+
+        scene.add(meshBurbuja);
+        burbujasActivas.push({
+          mesh: meshBurbuja,
+          velY: 0.32 + Math.random() * 0.38,
+          velX: (Math.random() - 0.5) * 0.14,
+          velZ: (Math.random() - 0.5) * 0.14,
+          fase: Math.random() * Math.PI * 2,
+          vida: 0,
+          vidaMax: 0.9 + Math.random() * 0.75
+        });
+      }
+    }
+
+    function actualizarBurbujas(delta) {
+      for (let i = burbujasActivas.length - 1; i >= 0; i--) {
+        const b = burbujasActivas[i];
+        b.vida += delta;
+        if (b.vida >= b.vidaMax) {
+          scene.remove(b.mesh);
+          b.mesh.material.dispose();
+          burbujasActivas.splice(i, 1);
+          continue;
+        }
+
+        const progreso = b.vida / b.vidaMax;
+        b.mesh.position.y += b.velY * delta;
+        b.mesh.position.x += (b.velX + Math.sin(b.vida * 7 + b.fase) * 0.06) * delta;
+        b.mesh.position.z += (b.velZ + Math.cos(b.vida * 7 + b.fase) * 0.06) * delta;
+
+        b.mesh.scale.multiplyScalar(1 + delta * 0.25);
+        b.mesh.material.opacity = 0.85 * (1 - progreso * progreso);
+      }
+    }
+
+    // 4. Mundo de Físicas (Cannon-es)
+    const world = new CANNON.World();
+    world.gravity.set(0, -9.82, 0);
+    world.broadphase = new CANNON.SAPBroadphase(world);
+    world.allowSleep = true;
+    world.solver.iterations = 14;
+
+    const matFisicoEscenario = new CANNON.Material('escenario');
+    const matFisicoBotella = new CANNON.Material('botella');
+
+    world.addContactMaterial(new CANNON.ContactMaterial(matFisicoEscenario, matFisicoBotella, {
+      friction: 0.7,
+      restitution: 0.12
+    }));
+    world.addContactMaterial(new CANNON.ContactMaterial(matFisicoBotella, matFisicoBotella, {
+      friction: 0.35,
+      restitution: 0.2
+    }));
+
+    const mallasDebugColisiones = [];
+
+    function crearCilindroChoqueDesdeMalla(mesh) {
+      mesh.updateWorldMatrix(true, false);
+      const box = new THREE.Box3().setFromObject(mesh);
+      const size = new THREE.Vector3();
+      const center = new THREE.Vector3();
+      box.getSize(size);
+      box.getCenter(center);
+
+      if (size.x < 0.01 || size.y < 0.01 || size.z < 0.01) return;
+      if (size.x > 7.5 && size.z > 7.5 && size.y > 3.0) return;
+
+      const radio = Math.max(size.x, size.z) * 0.5;
+      const altura = size.y;
+
+      const shape = new CANNON.Cylinder(radio, radio, altura, 24);
+      const body = new CANNON.Body({
+        mass: 0,
+        material: matFisicoEscenario
+      });
+      body.addShape(shape);
+      body.position.set(center.x, center.y, center.z);
+      world.addBody(body);
+
+      const debugGeo = new THREE.CylinderGeometry(radio, radio, altura, 24);
+      const debugMat = new THREE.MeshBasicMaterial({
+        color: 0x008f5a,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.75
+      });
+      const debugMesh = new THREE.Mesh(debugGeo, debugMat);
+      debugMesh.position.set(center.x, center.y, center.z);
+      debugMesh.visible = false;
+      scene.add(debugMesh);
+      mallasDebugColisiones.push(debugMesh);
+    }
+
+    function crearBarreraCilindricaCupula(centro, radioInterior, alturaTotal) {
+      const segmentos = 28;
+      const grosorPared = 0.4;
+      const anchoSegmento = (2 * Math.PI * radioInterior) / segmentos + 0.15;
+
+      for (let i = 0; i < segmentos; i++) {
+        const angulo = (i / segmentos) * Math.PI * 2;
+        const posX = centro.x + Math.cos(angulo) * (radioInterior + grosorPared * 0.5);
+        const posZ = centro.z + Math.sin(angulo) * (radioInterior + grosorPared * 0.5);
+
+        const wallShape = new CANNON.Box(
+          new CANNON.Vec3(grosorPared * 0.5, alturaTotal * 0.5, anchoSegmento * 0.5)
+        );
+        const wallBody = new CANNON.Body({
+          mass: 0,
+          material: matFisicoEscenario
+        });
+        wallBody.addShape(wallShape);
+        wallBody.position.set(posX, centro.y, posZ);
+        wallBody.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), -angulo);
+        world.addBody(wallBody);
+      }
+
+      const techoShape = new CANNON.Plane();
+      const techoBody = new CANNON.Body({
+        mass: 0,
+        material: matFisicoEscenario
+      });
+      techoBody.addShape(techoShape);
+      techoBody.quaternion.setFromEuler(Math.PI / 2, 0, 0);
+      techoBody.position.set(centro.x, centro.y + alturaTotal * 0.48, centro.z);
+      world.addBody(techoBody);
+
+      const debugCupulaGeo = new THREE.CylinderGeometry(radioInterior, radioInterior, alturaTotal, segmentos, 1, true);
+      const debugCupulaMat = new THREE.MeshBasicMaterial({
+        color: 0x00d8ff,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.4
+      });
+      const debugCupulaMesh = new THREE.Mesh(debugCupulaGeo, debugCupulaMat);
+      debugCupulaMesh.position.set(centro.x, centro.y, centro.z);
+      debugCupulaMesh.visible = false;
+      scene.add(debugCupulaMesh);
+      mallasDebugColisiones.push(debugCupulaMesh);
+    }
+
+    // 5. Texturas procedurales: Tierra Negra y Corcho de Madera Natural
+    function crearTexturaTierraNegra() {
+      const size = 512;
+      const canvasColor = document.createElement('canvas');
+      canvasColor.width = canvasColor.height = size;
+      const ctxC = canvasColor.getContext('2d');
+
+      const canvasBump = document.createElement('canvas');
+      canvasBump.width = canvasBump.height = size;
+      const ctxB = canvasBump.getContext('2d');
+
+      ctxC.fillStyle = '#110f0d';
+      ctxC.fillRect(0, 0, size, size);
+      ctxB.fillStyle = '#808080';
+      ctxB.fillRect(0, 0, size, size);
+
+      for (let i = 0; i < 18000; i++) {
+        const x = Math.random() * size;
+        const y = Math.random() * size;
+        const r = Math.random() * 2.4 + 0.4;
+        const tono = Math.floor(Math.random() * 24) + 8;
+        ctxC.fillStyle = `rgb(${tono + 4}, ${tono + 2}, ${tono})`;
+        ctxC.beginPath();
+        ctxC.arc(x, y, r, 0, Math.PI * 2);
+        ctxC.fill();
+
+        const elevacion = Math.floor(Math.random() * 255);
+        ctxB.fillStyle = `rgb(${elevacion}, ${elevacion}, ${elevacion})`;
+        ctxB.beginPath();
+        ctxB.arc(x, y, r, 0, Math.PI * 2);
+        ctxB.fill();
+      }
+
+      const map = new THREE.CanvasTexture(canvasColor);
+      const bumpMap = new THREE.CanvasTexture(canvasBump);
+      map.wrapS = map.wrapT = bumpMap.wrapS = bumpMap.wrapT = THREE.RepeatWrapping;
+      map.repeat.set(8, 8);
+      bumpMap.repeat.set(8, 8);
+      return { map, bumpMap };
+    }
+
+    function crearTexturaCorcho() {
+      const size = 512;
+      const canvasColor = document.createElement('canvas');
+      canvasColor.width = canvasColor.height = size;
+      const ctxC = canvasColor.getContext('2d');
+
+      const canvasBump = document.createElement('canvas');
+      canvasBump.width = canvasBump.height = size;
+      const ctxB = canvasBump.getContext('2d');
+
+      ctxC.fillStyle = '#a47548';
+      ctxC.fillRect(0, 0, size, size);
+      ctxB.fillStyle = '#b0b0b0';
+      ctxB.fillRect(0, 0, size, size);
+
+      for (let i = 0; i < 6500; i++) {
+        const x = Math.random() * size;
+        const y = Math.random() * size;
+        const r = Math.random() * 3.2 + 0.6;
+        const v = Math.floor(Math.random() * 42) - 20;
+        ctxC.fillStyle = `rgb(${168 + v}, ${118 + Math.floor(v * 0.8)}, ${72 + Math.floor(v * 0.6)})`;
+        ctxC.beginPath();
+        ctxC.ellipse(x, y, r * 1.4, r * 0.85, Math.random() * Math.PI, 0, Math.PI * 2);
+        ctxC.fill();
+      }
+
+      for (let i = 0; i < 1400; i++) {
+        const x = Math.random() * size;
+        const y = Math.random() * size;
+        const rx = Math.random() * 4.5 + 1.0;
+        const ry = Math.random() * 2.2 + 0.5;
+        const ang = Math.random() * Math.PI;
+
+        ctxC.fillStyle = Math.random() > 0.35 ? '#4a2e16' : '#6b4423';
+        ctxC.beginPath();
+        ctxC.ellipse(x, y, rx, ry, ang, 0, Math.PI * 2);
+        ctxC.fill();
+
+        ctxB.fillStyle = '#242424';
+        ctxB.beginPath();
+        ctxB.ellipse(x, y, rx, ry, ang, 0, Math.PI * 2);
+        ctxB.fill();
+      }
+
+      const map = new THREE.CanvasTexture(canvasColor);
+      const bumpMap = new THREE.CanvasTexture(canvasBump);
+      map.wrapS = map.wrapT = bumpMap.wrapS = bumpMap.wrapT = THREE.RepeatWrapping;
+      map.repeat.set(2, 2);
+      bumpMap.repeat.set(2, 2);
+      return { map, bumpMap };
+    }
+
+    const texturaTierra = crearTexturaTierraNegra();
+    const texturaCorcho = crearTexturaCorcho();
+
+    const waterNormals = new THREE.TextureLoader().load(
+      'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/waternormals.jpg',
+      (texture) => {
+        texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(4, 4);
+      }
+    );
+
+    // MATERIALES FÍSICOS
+    const materialCorcho = new THREE.MeshStandardMaterial({
+      map: texturaCorcho.map,
+      bumpMap: texturaCorcho.bumpMap,
+      bumpScale: 0.018,
+      roughnessMap: texturaCorcho.bumpMap,
+      roughness: 0.92,
+      metalness: 0.02
+    });
+
+    const materialVidrioBotella = new THREE.MeshPhysicalMaterial({
+      color: 0xfff0c2,
+      attenuationColor: 0xe5a124,
+      attenuationDistance: 0.75,
+      emissive: 0x000000,
+      emissiveIntensity: 0.0,
+      metalness: 0.0,
+      roughness: 0.06,
+      transmission: 0.92,
+      ior: 1.52,
+      thickness: 0.7,
+      reflectivity: 0.9,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.03,
+      transparent: true
+    });
+
+    const materialCristalAmbar = new THREE.MeshPhysicalMaterial({
+      color: 0xd97706,
+      emissive: 0xff8c00,
+      emissiveIntensity: 1.3,
+      metalness: 0.15,
+      roughness: 0.12,
+      reflectivity: 1.0,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.05,
+      sheen: 0.8,
+      sheenColor: new THREE.Color(0xffd166),
+      side: THREE.DoubleSide,
+      depthWrite: true
+    });
+
+    const materialAguaTransparente = new THREE.MeshPhysicalMaterial({
+      color: 0xd9f2ff,
+      attenuationColor: 0x1a4d5c,
+      attenuationDistance: 1.5,
+      metalness: 0.0,
+      roughness: 0.04,
+      transmission: 0.93,
+      ior: 1.333,
+      thickness: 0.5,
+      normalMap: waterNormals,
+      normalScale: new THREE.Vector2(0.15, 0.15),
+      transparent: true
+    });
+
+    const materialTierra = new THREE.MeshStandardMaterial({
+      map: texturaTierra.map,
+      bumpMap: texturaTierra.bumpMap,
+      bumpScale: 0.035,
+      roughnessMap: texturaTierra.bumpMap,
+      roughness: 0.95,
+      metalness: 0.04
+    });
+
+    const materialRaices = new THREE.MeshStandardMaterial({
+      color: 0x241a12,
+      bumpMap: texturaTierra.bumpMap,
+      bumpScale: 0.015,
+      roughness: 0.85,
+      metalness: 0.05
+    });
+
+    function esParteDeBotella(obj) {
+      let actual = obj;
+      while (actual) {
+        if (actual.name && actual.name.toLowerCase().includes('botella')) return true;
+        actual = actual.parent;
+      }
+      return false;
+    }
+
+    function esFormaDeChoque(obj) {
+      let actual = obj;
+      while (actual) {
+        const n = actual.name ? actual.name.toLowerCase().replace(/[\s_-]/g, '') : '';
+        if (
+          n.includes('fomasdechoque') ||
+          n.includes('formasdechoque') ||
+          n.includes('formadechoque') ||
+          n.includes('colision') ||
+          n.includes('collider')
+        ) {
+          return true;
+        }
+        actual = actual.parent;
+      }
+      return false;
+    }
+
+    // 6. Cargar GLB
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
+
+    const gltfLoader = new GLTFLoader();
+    gltfLoader.setDRACOLoader(dracoLoader);
+
+    const botellasFisicas = [];
+    const mallasBotellas = [];
+
+    gltfLoader.load(
+      './escena.glb',
+      (gltf) => {
+        try {
+          actualizarProgreso(85, 'Construyendo escena... 85%', 'Procesando corchos, fomasdechoque y cúpula');
+
+          const modelo = gltf.scene;
+          scene.add(modelo);
+          modelo.updateMatrixWorld(true);
+
+          const objetosBotella = [];
+          let cupulaDetectada = false;
+
+          function configurarLimitesDesdeCupula(boxCupula) {
+            const sizeCupula = new THREE.Vector3();
+            const centerCupula = new THREE.Vector3();
+            boxCupula.getSize(sizeCupula);
+            boxCupula.getCenter(centerCupula);
+
+            const radioInterior = Math.min(sizeCupula.x, sizeCupula.z) * 0.485;
+            crearBarreraCilindricaCupula(centerCupula, radioInterior, sizeCupula.y);
+
+            limitesCamara.centro.copy(centerCupula);
+            limitesCamara.radioMax = Math.max(1.2, radioInterior - 0.55);
+            limitesCamara.minY = boxCupula.min.y + 0.35;
+            limitesCamara.maxY = boxCupula.max.y - 0.45;
+          }
+
+          modelo.traverse((child) => {
+            if (child.isLight) {
+              child.intensity *= 0.0022;
+              child.color.lerp(new THREE.Color(0xffb84d), 0.65);
+              child.castShadow = true;
+              if (child.shadow) {
+                child.shadow.mapSize.width = 2048;
+                child.shadow.mapSize.height = 2048;
+                child.shadow.bias = -0.0004;
+                child.shadow.normalBias = 0.02;
+              }
+            }
+
+            const nombreObj = child.name ? child.name.toLowerCase() : '';
+
+            if (!nombreObj.includes('cupula') && esFormaDeChoque(child)) {
+              child.visible = false;
+              child.castShadow = false;
+              child.receiveShadow = false;
+              if (child.isMesh) {
+                crearCilindroChoqueDesdeMalla(child);
+              }
+              return;
+            }
+
+            if (nombreObj.includes('botella') && !child.parent?.name.toLowerCase().includes('botella')) {
+              objetosBotella.push(child);
+            }
+
+            if (child.isMesh) {
+              const nombreMat = child.material ? child.material.name.toLowerCase() : '';
+              const dentroDeBotella = esParteDeBotella(child);
+
+              if (nombreObj.includes('cupula')) {
+                child.castShadow = false;
+                child.receiveShadow = false;
+
+                if (!cupulaDetectada) {
+                  const boxCupula = new THREE.Box3().setFromObject(child);
+                  configurarLimitesDesdeCupula(boxCupula);
+                  cupulaDetectada = true;
+                }
+
+                if (child.material) {
+                  child.material.side = THREE.DoubleSide;
+                  child.material.roughness = 1.0;
+                  child.material.metalness = 0.0;
+                  child.material.envMapIntensity = 0.04;
+                  child.material.needsUpdate = true;
+                }
+                return;
+              }
+
+              child.castShadow = true;
+              child.receiveShadow = true;
+
+              if (
+                nombreObj.includes('corcho') ||
+                nombreMat.includes('corcho') ||
+                nombreObj.includes('cork') ||
+                nombreMat.includes('cork')
+              ) {
+                child.material = materialCorcho;
+                return;
+              }
+
+              if (dentroDeBotella) {
+                if (
+                  !child.material.map &&
+                  (nombreMat.includes('vidrio') ||
+                    nombreMat.includes('cristal') ||
+                    nombreMat.includes('glass') ||
+                    child.material.transmission > 0 ||
+                    child.material.transparent)
+                ) {
+                  child.material = materialVidrioBotella;
+                }
+                return;
+              }
+
+              if (nombreObj.includes('agua') || nombreMat.includes('agua')) {
+                child.material = materialAguaTransparente;
+                child.castShadow = false;
+                return;
+              }
+
+              if (nombreObj.includes('cristal') || nombreMat.includes('cristal')) {
+                child.material = materialCristalAmbar;
+
+                child.geometry.computeBoundingBox();
+                const centro = new THREE.Vector3();
+                child.geometry.boundingBox.getCenter(centro);
+                child.localToWorld(centro);
+
+                const luzCristal = new THREE.PointLight(0xff9500, 2.7, 6.8, 1.4);
+                luzCristal.position.copy(centro);
+                luzCristal.position.y += 0.2;
+                scene.add(luzCristal);
+                return;
+              }
+
+              if (nombreObj.includes('tierra') || nombreMat.includes('tierra')) {
+                child.material = materialTierra;
+                return;
+              }
+
+              if ((nombreObj.includes('raices') || nombreMat.includes('raices')) && !child.material.map) {
+                child.material = materialRaices;
+                return;
+              }
+            }
+          });
+
+          if (!cupulaDetectada) {
+            const cupulaObj = modelo.getObjectByName('cupula_360') || modelo.getObjectByName('Cupula_360');
+            if (cupulaObj) {
+              const boxCupula = new THREE.Box3().setFromObject(cupulaObj);
+              configurarLimitesDesdeCupula(boxCupula);
+            }
+          }
+
+          objetosBotella.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+
+          let alturaBaseBotellas = Infinity;
+          const centroBotellas = new THREE.Vector3();
+
+          objetosBotella.forEach((botella, idx) => {
+            const box = new THREE.Box3().setFromObject(botella);
+            const size = new THREE.Vector3();
+            const center = new THREE.Vector3();
+            box.getSize(size);
+            box.getCenter(center);
+            centroBotellas.add(center);
+
+            if (box.min.y < alturaBaseBotellas) alturaBaseBotellas = box.min.y;
+
+            const matchNum = botella.name.match(/(\d+)/);
+            const numeroBotella = matchNum ? parseInt(matchNum[1], 10) : idx + 1;
+
+            const radio = Math.max(size.x, size.z) * 0.38;
+            const altura = size.y * 0.98;
+
+            const shape = new CANNON.Cylinder(radio * 0.85, radio, altura, 14);
+            const body = new CANNON.Body({
+              mass: 1.2,
+              material: matFisicoBotella,
+              linearDamping: 0.22,
+              angularDamping: 0.32,
+              sleepSpeedLimit: 0.15,
+              sleepTimeLimit: 0.5
+            });
+            body.addShape(shape);
+
+            let ultimoGolpeCristal = 0;
+            body.addEventListener('collide', (e) => {
+              const velocidadImpacto = Math.abs(e.contact.getImpactVelocityAlongNormal());
+              const ahora = performance.now();
+              if (velocidadImpacto > 0.45 && ahora - ultimoGolpeCristal > 85) {
+                ultimoGolpeCristal = ahora;
+                reproducirSonidoCristal(velocidadImpacto);
+              }
+            });
+
+            scene.attach(botella);
+
+            const initPos = botella.position.clone();
+            const initQuat = botella.quaternion.clone();
+            const offsetCentroY = center.y - initPos.y;
+
+            body.position.set(initPos.x, initPos.y + offsetCentroY, initPos.z);
+            body.quaternion.set(initQuat.x, initQuat.y, initQuat.z, initQuat.w);
+            body.sleep();
+            world.addBody(body);
+
+            const registro = {
+              mesh: botella,
+              body,
+              initPos,
+              initQuat,
+              offsetCentroY,
+              numeroBotella,
+              alturaVisual: size.y
+            };
+            botellasFisicas.push(registro);
+
+            const debugBotGeo = new THREE.CylinderGeometry(radio * 0.85, radio, altura, 14);
+            const debugBotMat = new THREE.MeshBasicMaterial({ color: 0xf5a800, wireframe: true });
+            const debugBotMesh = new THREE.Mesh(debugBotGeo, debugBotMat);
+            debugBotMesh.visible = false;
+            scene.add(debugBotMesh);
+            registro.debugMesh = debugBotMesh;
+            mallasDebugColisiones.push(debugBotMesh);
+
+            botella.traverse((sub) => {
+              if (sub.isMesh) {
+                sub.userData.registroFisico = registro;
+                mallasBotellas.push(sub);
+              }
+            });
+          });
+
+          if (objetosBotella.length > 0) {
+            centroBotellas.divideScalar(objetosBotella.length);
+            const esMovil = window.innerWidth <= 768;
+            const radioInicial = Math.min(esMovil ? 2.75 : 2.4, limitesCamara.radioMax * 0.78);
+            camera.position.set(
+              centroBotellas.x,
+              centroBotellas.y + (esMovil ? 0.42 : 0.35),
+              centroBotellas.z + radioInicial
+            );
+            const dirHaciaBotellas = centroBotellas.clone().sub(camera.position).normalize();
+            orbit.target.copy(camera.position).add(dirHaciaBotellas.multiplyScalar(0.01));
+          }
+
+          const yPisoSeguridad = (isFinite(alturaBaseBotellas) ? alturaBaseBotellas : 0) - 2.5;
+          const pisoSeguridad = new CANNON.Body({
+            type: CANNON.Body.STATIC,
+            material: matFisicoEscenario,
+            shape: new CANNON.Plane()
+          });
+          pisoSeguridad.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
+          pisoSeguridad.position.set(0, yPisoSeguridad, 0);
+          world.addBody(pisoSeguridad);
+
+          actualizarProgreso(100, '¡Listo! 100%', 'Abriendo vista 3D');
+          clearInterval(timerCarga);
+          setTimeout(() => {
+            loadingEl.style.display = 'none';
+            activarCicloAvisoInteraccion();
+          }, 150);
+        } catch (err) {
+          clearInterval(timerCarga);
+          console.error('Error procesando la escena:', err);
+          tituloEl.textContent = 'Error al construir la escena';
+          detalleEl.textContent = err.message;
+        }
+      },
+      (xhr) => {
+        if (xhr.lengthComputable && xhr.total > 0) {
+          const pct = Math.min(80, Math.round((xhr.loaded / xhr.total) * 80));
+          const mbCargados = (xhr.loaded / (1024 * 1024)).toFixed(1);
+          const mbTotal = (xhr.total / (1024 * 1024)).toFixed(1);
+          actualizarProgreso(pct, `Descargando modelo 3D... ${pct}%`, `${mbCargados} MB / ${mbTotal} MB`);
+        } else {
+          const mbCargados = (xhr.loaded / (1024 * 1024)).toFixed(1);
+          actualizarProgreso(45, 'Descargando modelo 3D...', `${mbCargados} MB recibidos`);
+        }
+      },
+      (error) => {
+        clearInterval(timerCarga);
+        console.error('Error al cargar el modelo:', error);
+        tituloEl.textContent = 'Error cargando escena.glb';
+        detalleEl.textContent = 'Verifica que escena.glb esté junto a index.html (F12 para detalles)';
+      }
+    );
+
+    // 7. INTERACCIÓN CON BOTELLAS + BURBUJAS
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    const planoArrastre = new THREE.Plane();
+    const puntoInterseccion = new THREE.Vector3();
+
+    const cuerpoCursor = new CANNON.Body({ mass: 0, type: CANNON.Body.KINEMATIC });
+    cuerpoCursor.collisionFilterGroup = 0;
+    world.addBody(cuerpoCursor);
+
+    let restriccionArrastre = null;
+    let registroActivo = null;
+    let pointerIdActivo = null;
+    let impactoInicial = null;
+    let tiempoInicioClic = 0;
+    let seArrastro = false;
+    let ultimoEmitBurbujas = 0;
+
+    function actualizarMouse(event) {
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    }
+
+    window.addEventListener('pointermove', (event) => {
+      if (arrastrandoContornoYAltura || gestoDosDedosActivo) return;
+      if (pointerIdActivo !== null && event.pointerId !== pointerIdActivo) return;
+
+      actualizarMouse(event);
+      raycaster.setFromCamera(mouse, camera);
+
+      if (registroActivo && restriccionArrastre) {
+        seArrastro = true;
+        if (raycaster.ray.intersectPlane(planoArrastre, puntoInterseccion)) {
+          cuerpoCursor.position.set(puntoInterseccion.x, puntoInterseccion.y, puntoInterseccion.z);
+
+          const ahora = performance.now();
+          if (ahora - ultimoEmitBurbujas > 45) {
+            emitirBurbujasEnBotella(registroActivo, 3);
+            ultimoEmitBurbujas = ahora;
+          }
+        }
+        return;
+      }
+
+      if (event.pointerType === 'mouse') {
+        const impactos = raycaster.intersectObjects(mallasBotellas, false);
+        document.body.style.cursor = impactos.length > 0 ? 'grab' : 'default';
+      }
+    });
+
+    window.addEventListener('pointerdown', (event) => {
+      if (event.pointerType === 'mouse' && event.button !== 0) return;
+      if (gestoDosDedosActivo) return;
+      if (
+        event.target.closest('#menu-botellas') ||
+        event.target.closest('#contenedor-reset') ||
+        event.target.closest('#contenedor-qr') ||
+        event.target.closest('#btnDebug') ||
+        event.target.closest('#contenedor-guia') ||
+        event.target.closest('#ficha-dios') ||
+        event.target.closest('#btnAudio')
+      ) {
+        return;
+      }
+
+      actualizarMouse(event);
+      raycaster.setFromCamera(mouse, camera);
+
+      const impactos = raycaster.intersectObjects(mallasBotellas, false);
+      if (impactos.length > 0) {
+        inicializarAudio();
+        avisoEl.classList.remove('visible');
+        pausarAutoRotate();
+        orbit.enabled = false;
+        if (event.pointerType === 'mouse') document.body.style.cursor = 'grabbing';
+
+        impactoInicial = impactos[0];
+        registroActivo = impactoInicial.object.userData.registroFisico;
+        pointerIdActivo = event.pointerId;
+        tiempoInicioClic = performance.now();
+        seArrastro = false;
+
+        emitirBurbujasEnBotella(registroActivo, 10);
+        mostrarFichaBotella(registroActivo.numeroBotella);
+
+        registroActivo.body.wakeUp();
+
+        const puntoMundo = new CANNON.Vec3(impactoInicial.point.x, impactoInicial.point.y, impactoInicial.point.z);
+        cuerpoCursor.position.copy(puntoMundo);
+
+        const puntoLocal = registroActivo.body.pointToLocalFrame(puntoMundo);
+        restriccionArrastre = new CANNON.PointToPointConstraint(
+          registroActivo.body,
+          puntoLocal,
+          cuerpoCursor,
+          new CANNON.Vec3(0, 0, 0),
+          10
+        );
+        world.addConstraint(restriccionArrastre);
+
+        planoArrastre.setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), impactoInicial.point);
+      }
+    });
+
+    function finalizarArrastreBotella(event) {
+      if (!registroActivo) return;
+      if (event && pointerIdActivo !== null && event.pointerId !== pointerIdActivo) return;
+
+      if (event && event.pointerType !== 'mouse' && !seArrastro) {
+        // Dejar la ficha visible en táctil para lectura cómoda
+      } else {
+        ocultarFichaBotella();
+      }
+
+      if (restriccionArrastre) {
+        world.removeConstraint(restriccionArrastre);
+        restriccionArrastre = null;
+      }
+
+      const duracionClic = performance.now() - tiempoInicioClic;
+
+      if (!seArrastro && duracionClic < 260 && impactoInicial) {
+        const dirEmpujon = raycaster.ray.direction.clone().normalize();
+        const fuerzaSuave = 1.35;
+        const impulso = new CANNON.Vec3(
+          dirEmpujon.x * fuerzaSuave,
+          0.12,
+          dirEmpujon.z * fuerzaSuave
+        );
+        const puntoMundo = new CANNON.Vec3(impactoInicial.point.x, impactoInicial.point.y, impactoInicial.point.z);
+        registroActivo.body.applyImpulse(impulso, puntoMundo);
+      }
+
+      registroActivo = null;
+      pointerIdActivo = null;
+      impactoInicial = null;
+      if (!gestoDosDedosActivo) orbit.enabled = true;
+      document.body.style.cursor = 'default';
+      reanudarAutoRotate();
+    }
+
+    window.addEventListener('pointerup', finalizarArrastreBotella);
+    window.addEventListener('pointercancel', finalizarArrastreBotella);
+
+    // 8. Botón de Reseteo y Diagnóstico de Colisiones
+    const btnReset = document.getElementById('btnReset');
+    btnReset.addEventListener('click', () => {
+      inicializarAudio();
+      reproducirSonidoCristal(0.45);
+
+      btnReset.classList.remove('girando');
+      void btnReset.offsetWidth;
+      btnReset.classList.add('girando');
+
+      botellaFijadaPorBoton = null;
+      actualizarEstadoBotones();
+      fichaPanel.classList.remove('visible');
+
+      botellasFisicas.forEach((reg) => {
+        const { mesh, body, initPos, initQuat, offsetCentroY } = reg;
+        body.velocity.set(0, 0, 0);
+        body.angularVelocity.set(0, 0, 0);
+        body.position.set(initPos.x, initPos.y + offsetCentroY, initPos.z);
+        body.quaternion.set(initQuat.x, initQuat.y, initQuat.z, initQuat.w);
+        body.sleep();
+
+        mesh.position.copy(initPos);
+        mesh.quaternion.copy(initQuat);
+        emitirBurbujasEnBotella(reg, 6);
+      });
+    });
+
+    let debugActivo = false;
+    const btnDebug = document.getElementById('btnDebug');
+    btnDebug.addEventListener('click', () => {
+      debugActivo = !debugActivo;
+      btnDebug.classList.toggle('activo', debugActivo);
+      mallasDebugColisiones.forEach((m) => { m.visible = debugActivo; });
+      btnDebug.textContent = debugActivo ? 'Ocultar Colisiones' : 'Colisiones';
+    });
+
+    // 9. Ajuste de ventana y bucle animado
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const delta = Math.min(clock.getDelta(), 0.05);
+      world.step(1 / 60, delta, 6);
+
+      if (autoRotarEnContorno && orbit.enabled && !arrastrandoContornoYAltura && !gestoDosDedosActivo) {
+        rotarCamaraEnContorno(0.14 * delta);
+      }
+
+      botellasFisicas.forEach(({ mesh, body, offsetCentroY, debugMesh }) => {
+        if (body.velocity.y > 1.8) body.velocity.y = 1.8;
+
+        mesh.quaternion.set(body.quaternion.x, body.quaternion.y, body.quaternion.z, body.quaternion.w);
+        const offsetVec = new THREE.Vector3(0, -offsetCentroY, 0).applyQuaternion(mesh.quaternion);
+        mesh.position.set(
+          body.position.x + offsetVec.x,
+          body.position.y + offsetVec.y,
+          body.position.z + offsetVec.z
+        );
+
+        if (debugMesh && debugMesh.visible) {
+          debugMesh.position.set(body.position.x, body.position.y, body.position.z);
+          debugMesh.quaternion.copy(mesh.quaternion);
+        }
+      });
+
+      actualizarBurbujas(delta);
+      actualizarSonidoCamara(delta);
+
+      waterNormals.offset.x += 0.0008;
+      waterNormals.offset.y += 0.0005;
+
+      orbit.update();
+      aplicarLimitesCamara();
+      renderer.render(scene, camera);
+    }
+    animate();
+  </script>
+</body>
+</html>
