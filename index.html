@@ -586,7 +586,7 @@
     import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
     import * as CANNON from 'cannon-es';
 
-    // Detección de dispositivo móvil para optimización automática de rendimiento
+    // Detección de dispositivo móvil para optimización extrema de rendimiento
     const esMovil = window.innerWidth <= 768 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
     // URL oficial del proyecto Chagrasué
@@ -840,7 +840,7 @@
       });
     });
 
-    // 1. Escena, Cámara y Renderizador Optimizado
+    // 1. Escena, Cámara y Renderizador Ultra-Optimizado
     const scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2(0x0c0907, 0.016);
 
@@ -852,16 +852,21 @@
       powerPreference: 'high-performance'
     });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(esMovil ? 1 : Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(esMovil ? 0.75 : Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 0.82;
     renderer.shadowMap.enabled = !esMovil;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     document.body.appendChild(renderer.domElement);
 
-    const pmremGenerator = new THREE.PMREMGenerator(renderer);
-    scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
-    scene.environmentIntensity = esMovil ? 0.45 : 0.22;
+    if (!esMovil) {
+      const pmremGenerator = new THREE.PMREMGenerator(renderer);
+      scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+      scene.environmentIntensity = 0.22;
+    } else {
+      const luzAmbientalMovil = new THREE.AmbientLight(0xffe0b2, 1.35);
+      scene.add(luzAmbientalMovil);
+    }
 
     // 2. SISTEMA DE CÁMARA 360°
     const limitesCamara = {
@@ -1619,15 +1624,17 @@
               if (nombreObj.includes('cristal') || nombreMat.includes('cristal')) {
                 child.material = materialCristalAmbar;
 
-                child.geometry.computeBoundingBox();
-                const centro = new THREE.Vector3();
-                child.geometry.boundingBox.getCenter(centro);
-                child.localToWorld(centro);
+                if (!esMovil) {
+                  child.geometry.computeBoundingBox();
+                  const centro = new THREE.Vector3();
+                  child.geometry.boundingBox.getCenter(centro);
+                  child.localToWorld(centro);
 
-                const luzCristal = new THREE.PointLight(0xff9500, 2.7, 6.8, 1.4);
-                luzCristal.position.copy(centro);
-                luzCristal.position.y += 0.2;
-                scene.add(luzCristal);
+                  const luzCristal = new THREE.PointLight(0xff9500, 2.7, 6.8, 1.4);
+                  luzCristal.position.copy(centro);
+                  luzCristal.position.y += 0.2;
+                  scene.add(luzCristal);
+                }
                 return;
               }
 
@@ -1966,7 +1973,7 @@
       btnDebug.textContent = debugActivo ? 'Ocultar Colisiones' : 'Colisiones';
     });
 
-    // 9. Ajuste de ventana y bucle animado
+    // 9. Ajuste de ventana y bucle animado (tope estable de 30 FPS en móvil)
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
@@ -1974,9 +1981,13 @@
     });
 
     const clock = new THREE.Clock();
+    let ultimoFrame = 0;
 
-    function animate() {
+    function animate(tiempoActual) {
       requestAnimationFrame(animate);
+
+      if (esMovil && tiempoActual - ultimoFrame < 32) return;
+      ultimoFrame = tiempoActual;
 
       const delta = Math.min(clock.getDelta(), 0.05);
       world.step(1 / 60, delta, esMovil ? 2 : 6);
@@ -2012,7 +2023,7 @@
       aplicarLimitesCamara();
       renderer.render(scene, camera);
     }
-    animate();
+    animate(0);
   </script>
 </body>
 </html>
