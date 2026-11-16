@@ -57,45 +57,68 @@
       font-weight: 700;
     }
 
-    /* PANEL DE INSTRUCCIONES SUPERIOR IZQUIERDO */
+    /* PANEL DE INSTRUCCIONES SUPERIOR IZQUIERDO CON FLECHA DESPLEGABLE */
     #contenedor-guia {
       position: fixed;
-      top: 16px;
-      left: 16px;
-      z-index: 20;
+      top: 14px;
+      left: 14px;
+      z-index: 24;
       display: flex;
       flex-direction: column;
       align-items: flex-start;
-      gap: 8px;
+      gap: 6px;
     }
     #btnToggleGuia {
-      display: none;
-      width: 38px;
-      height: 38px;
-      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 13px;
+      border-radius: 99px;
       background: rgba(61, 28, 6, 0.9);
       color: var(--oro-miel);
-      border: 1.5px solid var(--oro-miel);
-      font-weight: 800;
-      font-size: 16px;
+      border: 1.5px solid rgba(245, 168, 0, 0.65);
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 0.4px;
       cursor: pointer;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
-      align-items: center;
-      justify-content: center;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(8px);
+      transition: transform 0.2s ease, background 0.2s ease;
     }
+    #btnToggleGuia:hover {
+      background: var(--cacao-oscuro);
+      transform: scale(1.03);
+    }
+    #flechaGuia {
+      display: inline-block;
+      font-size: 10px;
+      transition: transform 0.28s ease;
+    }
+    #contenedor-guia.colapsada #flechaGuia {
+      transform: rotate(-90deg);
+    }
+
     #guia {
-      background: rgba(61, 28, 6, 0.88);
+      background: rgba(61, 28, 6, 0.9);
       color: var(--crema-calido);
-      padding: 13px 18px;
-      border-radius: 10px;
-      font-size: 13px;
-      line-height: 1.55;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 12.5px;
+      line-height: 1.52;
       backdrop-filter: blur(8px);
       border: 1px solid rgba(245, 168, 0, 0.45);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
-      pointer-events: none;
-      max-width: 340px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+      max-width: 345px;
+      transform-origin: top left;
       transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+    #contenedor-guia.colapsada #guia {
+      opacity: 0;
+      transform: translateY(-6px) scale(0.96);
+      pointer-events: none;
+      position: absolute;
+      top: 40px;
+      left: 0;
     }
     #guia .titulo-guia {
       display: inline-block;
@@ -113,8 +136,8 @@
     /* BOTÓN DE CONTROL DE SONIDO DE ENTORNO (SUPERIOR DERECHA) */
     #btnAudio {
       position: fixed;
-      top: 16px;
-      right: 18px;
+      top: 14px;
+      right: 16px;
       width: 42px;
       height: 42px;
       border-radius: 50%;
@@ -327,10 +350,10 @@
       display: none;
     }
 
-    /* PANTALLA DE CARGA */
+    /* PANTALLA DE CARGA + AVISO DE GIRAR CELULAR EN HORIZONTAL */
     #loading {
       position: fixed; inset: 0; display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 14px; padding: 20px; text-align: center;
+      align-items: center; justify-content: center; gap: 14px; padding: 24px; text-align: center;
       color: var(--crema-calido); font-size: 16px; background: #160a03; z-index: 30;
     }
     .barra-contenedor {
@@ -344,87 +367,115 @@
     }
     #loading-detalle { font-size: 13px; color: rgba(255, 248, 231, 0.72); }
 
+    @keyframes animarGiroTelefono {
+      0%, 100% { transform: rotate(0deg); }
+      40%, 60% { transform: rotate(-90deg); }
+    }
+    #aviso-girar-movil {
+      display: none;
+      margin-top: 18px;
+      padding: 14px 20px;
+      border-radius: 14px;
+      background: rgba(61, 28, 6, 0.85);
+      border: 1.5px solid rgba(245, 168, 0, 0.65);
+      max-width: 310px;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    }
+    #aviso-girar-movil .icono-telefono {
+      font-size: 28px;
+      display: inline-block;
+      animation: animarGiroTelefono 2.4s ease-in-out infinite;
+    }
+    #aviso-girar-movil p {
+      font-size: 13.5px;
+      line-height: 1.4;
+      color: var(--crema-calido);
+    }
+    #aviso-girar-movil strong {
+      color: var(--oro-miel);
+    }
+
     /* =========================================================
-       DISEÑO RESPONSIVE PARA TABLETS Y CELULARES (<= 768px)
+       DISEÑO RESPONSIVE PARA TABLETS Y CELULARES
        ========================================================= */
-    @media (max-width: 768px) {
+    @media (max-width: 920px), (hover: none) and (pointer: coarse) {
       .texto-desktop { display: none; }
       .texto-movil { display: inline; }
 
-      #aviso-interaccion {
-        font-size: 15px;
-        padding: 14px 22px;
-      }
-
-      #btnToggleGuia {
+      #aviso-girar-movil {
         display: flex;
       }
+
       #guia {
-        font-size: 12px;
-        padding: 10px 14px;
-        max-width: calc(100vw - 32px);
-        opacity: 0;
-        transform: translateY(-8px);
-        pointer-events: none;
+        font-size: 11px;
+        padding: 10px 12px;
+        max-width: min(295px, calc(100vw - 28px));
+        line-height: 1.45;
       }
-      #guia.abierta {
-        opacity: 1;
-        transform: translateY(0);
-        pointer-events: auto;
+    }
+
+    /* Celular en modo VERTICAL (Portrait) */
+    @media (max-width: 768px) and (orientation: portrait) {
+      #aviso-interaccion {
+        font-size: 14px;
+        padding: 12px 18px;
       }
 
       #btnAudio {
-        top: 16px;
-        right: 16px;
-        width: 38px;
-        height: 38px;
-        font-size: 16px;
+        top: 14px;
+        right: 14px;
+        width: 36px;
+        height: 36px;
+        font-size: 15px;
       }
 
       #menu-botellas {
         left: 50%;
         top: auto;
-        bottom: 128px;
+        bottom: 122px;
         transform: translateX(-50%);
         flex-direction: row;
-        gap: 10px;
+        gap: 8px;
         background: rgba(61, 28, 6, 0.55);
-        padding: 6px 12px;
+        padding: 5px 10px;
         border-radius: 99px;
         backdrop-filter: blur(6px);
         border: 1px solid rgba(245, 168, 0, 0.25);
       }
       .btn-etiqueta {
-        width: 46px;
-        height: 46px;
+        width: 42px;
+        height: 42px;
         transform-origin: center bottom;
       }
       .btn-etiqueta.activo {
-        transform: scale(1.24) translateY(-4px);
+        transform: scale(1.22) translateY(-4px);
       }
 
       #contenedor-reset {
-        bottom: 10px;
+        bottom: 8px;
       }
       #btnReset {
-        width: 114px;
-        height: 114px;
+        width: 108px;
+        height: 108px;
       }
 
       #btnDebug {
-        bottom: 12px;
+        bottom: 10px;
         left: 10px;
-        padding: 4px 8px;
+        padding: 4px 7px;
         font-size: 10px;
       }
 
       #contenedor-qr {
-        bottom: 12px;
-        right: 12px;
+        bottom: 10px;
+        right: 10px;
       }
       #btnQr {
-        width: 46px;
-        height: 46px;
+        width: 44px;
+        height: 44px;
       }
       #btnQr.ampliado {
         position: fixed;
@@ -433,14 +484,14 @@
         top: 50%;
         left: 50%;
         transform-origin: center center;
-        transform: translate(-50%, -50%) scale(3.4);
+        transform: translate(-50%, -50%) scale(3.2);
       }
 
       #ficha-dios {
-        top: 62px;
+        top: 56px;
         left: 12px;
         right: 12px;
-        bottom: 192px;
+        bottom: 182px;
         justify-content: center;
         transform: translateY(20px);
       }
@@ -449,7 +500,7 @@
         pointer-events: auto;
       }
       #ficha-dios img {
-        max-width: 88vw;
+        max-width: 86vw;
         max-height: 100%;
         width: auto;
         height: 100%;
@@ -457,16 +508,16 @@
       #btnCerrarFichaMovil {
         display: flex;
         position: absolute;
-        top: -10px;
+        top: -8px;
         right: 8%;
-        width: 30px;
-        height: 30px;
+        width: 28px;
+        height: 28px;
         border-radius: 50%;
         background: var(--terracota);
         color: var(--crema-calido);
         border: 1.5px solid var(--oro-miel);
         font-weight: 700;
-        font-size: 14px;
+        font-size: 13px;
         align-items: center;
         justify-content: center;
         cursor: pointer;
@@ -474,20 +525,106 @@
       }
     }
 
-    @media (max-height: 480px) {
+    /* Celular en modo HORIZONTAL (Landscape - recomendado) */
+    @media (max-height: 540px) and (orientation: landscape) {
+      #contenedor-guia {
+        top: 10px;
+        left: 10px;
+      }
+      #btnToggleGuia {
+        padding: 5px 10px;
+        font-size: 11px;
+      }
+      #guia {
+        font-size: 10.5px;
+        padding: 8px 11px;
+        max-width: 270px;
+      }
+      #btnAudio {
+        top: 10px;
+        right: 12px;
+        width: 34px;
+        height: 34px;
+        font-size: 14px;
+      }
       #menu-botellas {
-        left: 14px;
-        top: 50%;
+        left: 12px;
+        top: 52%;
         bottom: auto;
         transform: translateY(-50%);
         flex-direction: column;
         gap: 6px;
-        padding: 6px;
+        padding: 5px;
+        background: rgba(61, 28, 6, 0.45);
+        border-radius: 99px;
       }
-      .btn-etiqueta { width: 38px; height: 38px; }
-      #btnReset { width: 88px; height: 88px; }
-      #ficha-dios { top: 12px; bottom: 12px; right: 72px; left: auto; }
-      #ficha-dios img { max-width: 42vw; }
+      .btn-etiqueta {
+        width: 36px;
+        height: 36px;
+        transform-origin: left center;
+      }
+      .btn-etiqueta.activo {
+        transform: scale(1.22);
+      }
+      #contenedor-reset {
+        bottom: 6px;
+      }
+      #btnReset {
+        width: 82px;
+        height: 82px;
+      }
+      #btnDebug {
+        bottom: 8px;
+        left: 10px;
+        font-size: 9px;
+        padding: 3px 6px;
+      }
+      #contenedor-qr {
+        bottom: 10px;
+        right: 12px;
+      }
+      #btnQr {
+        width: 40px;
+        height: 40px;
+      }
+      #btnQr.ampliado {
+        position: fixed;
+        bottom: auto;
+        right: auto;
+        top: 50%;
+        left: 50%;
+        transform-origin: center center;
+        transform: translate(-50%, -50%) scale(2.8);
+      }
+      #ficha-dios {
+        top: 48px;
+        bottom: 14px;
+        right: 64px;
+        left: auto;
+      }
+      #ficha-dios.visible {
+        pointer-events: auto;
+      }
+      #ficha-dios img {
+        max-width: 42vw;
+      }
+      #btnCerrarFichaMovil {
+        display: flex;
+        position: absolute;
+        top: -6px;
+        right: -6px;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: var(--terracota);
+        color: var(--crema-calido);
+        border: 1.5px solid var(--oro-miel);
+        font-weight: 700;
+        font-size: 12px;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+      }
     }
   </style>
   <script type="importmap">
@@ -505,6 +642,12 @@
     <div id="loading-titulo">Cargando escena 3D... 0%</div>
     <div class="barra-contenedor"><div id="barra-progreso"></div></div>
     <div id="loading-detalle">Iniciando motor... (0.0s)</div>
+
+    <!-- Aviso visible en celular durante la carga -->
+    <div id="aviso-girar-movil">
+      <span class="icono-telefono">📱</span>
+      <p><strong>Gira tu celular en horizontal</strong> para visualizar mejor toda la experiencia 3D</p>
+    </div>
   </div>
 
   <!-- Aviso recordatorio central periódico -->
@@ -512,11 +655,14 @@
     <span>Interactúa</span> con las botellas y explora la <span>cámara 360°</span>
   </div>
 
-  <!-- Guía de interacción adaptativa -->
+  <!-- Guía de interacción desplegable con flecha -->
   <div id="contenedor-guia">
-    <button id="btnToggleGuia" aria-label="Ayuda">?</button>
+    <button id="btnToggleGuia" aria-label="Mostrar u ocultar guía">
+      <span>GUÍA</span>
+      <span id="flechaGuia">▼</span>
+    </button>
     <div id="guia">
-      <span class="titulo-guia">GUÍA DE INTERACCIÓN</span><br>
+      <span class="titulo-guia">CÓMO INTERACTUAR</span><br>
       <span class="texto-desktop">
         <span class="vineta">•</span> <strong>Botones izq. (1-5):</strong> Fijar o cerrar historia del Dios<br>
         <span class="vineta">•</span> <strong>Arrastrar botella:</strong> Burbujas de hidromiel + ver ficha<br>
@@ -525,10 +671,10 @@
         <span class="vineta">•</span> <strong>Rueda del ratón:</strong> Acercar / alejar dentro del domo
       </span>
       <span class="texto-movil">
-        <span class="vineta">•</span> <strong>Iconos inferiores (1-5):</strong> Fijar o cerrar historia del Dios<br>
-        <span class="vineta">•</span> <strong>1 dedo en botella:</strong> Mover con burbujas + ver ficha<br>
-        <span class="vineta">•</span> <strong>1 dedo en el fondo:</strong> Girar vista 360°<br>
-        <span class="vineta">•</span> <strong>2 dedos:</strong> Pellizcar para acercar / mover contorno y altura
+        <span class="vineta">•</span> <strong>Iconos (1-5):</strong> Toca para fijar o cerrar historia del Dios<br>
+        <span class="vineta">•</span> <strong>1 dedo en botella:</strong> Arrastra para mover con burbujas y ver ficha<br>
+        <span class="vineta">•</span> <strong>1 dedo en el fondo:</strong> Desliza para girar la vista 360°<br>
+        <span class="vineta">•</span> <strong>2 dedos:</strong> Pellizca para acercar/alejar o arrastra para mover en contorno y altura
       </span>
     </div>
   </div>
@@ -586,8 +732,11 @@
     import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
     import * as CANNON from 'cannon-es';
 
-    // Detección de dispositivo móvil para optimización extrema de rendimiento
-    const esMovil = window.innerWidth <= 768 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    // Detección de dispositivo móvil o táctil
+    const esMovil =
+      window.innerWidth <= 920 ||
+      /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+      (navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
 
     // URL oficial del proyecto Chagrasué
     const URL_PAGINA_WEB = 'https://stivencalderon2030.github.io/Chagrasue.github.io/';
@@ -728,7 +877,7 @@
     window.addEventListener('wheel', inicializarAudio, { once: true, capture: true });
 
     // =========================================================
-    // BARRA DE PROGRESO Y CONTROLES UI
+    // BARRA DE PROGRESO Y CONTROLES UI (GUÍA CON FLECHA)
     // =========================================================
     const loadingEl = document.getElementById('loading');
     const tituloEl = document.getElementById('loading-titulo');
@@ -748,11 +897,16 @@
       if (detalle) estadoTexto = detalle;
     }
 
+    const contenedorGuia = document.getElementById('contenedor-guia');
     const btnToggleGuia = document.getElementById('btnToggleGuia');
-    const guiaPanel = document.getElementById('guia');
+
+    if (esMovil) {
+      contenedorGuia.classList.add('colapsada');
+    }
+
     btnToggleGuia.addEventListener('click', (e) => {
       e.stopPropagation();
-      guiaPanel.classList.toggle('abierta');
+      contenedorGuia.classList.toggle('colapsada');
     });
 
     const btnQr = document.getElementById('btnQr');
@@ -774,8 +928,8 @@
       if (!e.target.closest('#contenedor-qr') && btnQr.classList.contains('ampliado')) {
         btnQr.classList.remove('ampliado');
       }
-      if (!e.target.closest('#contenedor-guia') && guiaPanel.classList.contains('abierta')) {
-        guiaPanel.classList.remove('abierta');
+      if (esMovil && !e.target.closest('#contenedor-guia') && !contenedorGuia.classList.contains('colapsada')) {
+        contenedorGuia.classList.add('colapsada');
       }
     });
 
@@ -784,11 +938,12 @@
     const btnCerrarFichaMovil = document.getElementById('btnCerrarFichaMovil');
     const botonesEtiquetasEls = document.querySelectorAll('.btn-etiqueta');
 
+    // Mapeo sincronizado con el orden correcto de cada dios/botella
     const imagenesBotellas = {
       1: './imgsegunbotella/botella1.png',
-      2: './imgsegunbotella/botella2.png',
-      3: './imgsegunbotella/botella3.png',
-      4: './imgsegunbotella/botella4.png',
+      2: './imgsegunbotella/botella3.png',
+      3: './imgsegunbotella/botella4.png',
+      4: './imgsegunbotella/botella2.png',
       5: './imgsegunbotella/botella5.png'
     };
 
